@@ -28,9 +28,18 @@
     "bower": "1.3.8"
   },
   "scripts": {
-    "test": "grunt concat coffee mocha"
+    "test": "grunt concat coffee mocha",
+    "tsc": "tsc",
+    "tsc:w": "tsc -w",
+    "typings": "typings",
+    "sass": "node-sass scss --output styles --output-style compressed"
   },
   "engines": {
     "node": ">=0.8 <0.11"
+  },
+  "dependencies": {
+    "raphael": "^2.2.1",
+    "typescript": "^1.8.10",
+    "typings": "^1.3.1"
   }
 }
