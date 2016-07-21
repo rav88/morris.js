@@ -1,41 +1,87 @@
-import EventEmitter = NodeJS.EventEmitter;
-import {Formatters} from "./morris";
-import Raphael = require("raphael");
+// Donut charts.
+//
+// @example
+//   Morris.Donut({
+//     el: $('#donut-container'),
+//     data: [
+//       { label: 'yin',  value: 50 },
+//       { label: 'yang', value: 50 }
+//     ]
+//   });
 
-export class Donut extends EventEmitter {
-    private options:DonutParams;
-    private raphael:Raphael;
-    private timeoutId?:any;
-    private values: number[];
-    private text1:HTMLElement;
-    private text2:HTMLElement;
+class Donut extends Morris.EventEmitter {
+    public defaults = {
+        colors: ["#0B62A4", "#3980B5", "#679DC6", "#95BBD7", "#B0CCE1", "#095791", "#095085", "#083E67", "#052C48", "#042135"],
+        backgroundColor: "#FFFFFF",
+        labelColor: "#000000",
+        formatter: Morris.commas,
+        resize: false
+    };
 
-    private redraw() : void {
+    // Create and render a donut chart.
+    //
+
+    constructor(options) {
+        if (!(this instanceof Morris.Donut)) {
+            return new Morris.Donut(options);
+        }
+        this.options = $.extend({}, this.defaults, options);
+
+        if (typeof options.element === "string") {
+            this.el = $(document.getElementById(options.element));
+        } else {
+            this.el = $(options.element);
+        }
+
+        if (this.el === null || this.el.length === 0) {
+            throw new Error("Graph placeholder not found.");
+        }
+
+        // bail if there's no data
+        if (options.data === void 0 || options.data.length === 0) {
+            return;
+        }
+
+        this.raphael = new Raphael(this.el[0]);
+
+        if (this.options.resize) {
+            $(window).bind("resize", (evt) => {
+                if (this.timeoutId != null) {
+                    window.clearTimeout(this.timeoutId);
+                }
+                return this.timeoutId = window.setTimeout(this.resizeHandler, 100);
+            });
+        }
+
+        this.setData(options.data);
+    }
+
+    // Clear and redraw the chart.
+
+    public redraw() {
         var C, cx, cy, i, idx, last, max_value, min, next, seg, total, value, w, _i, _j, _len, _len1, _ref, _ref1, _results;
-        (<RaphaelPaper> this.raphael).clear();
-        
-        let el: HTMLElement = this.options.element;
+        this.raphael.clear();
 
-        cx = el.offsetWidth / 2;
-        cy = el.offsetHeight / 2;
+        cx = this.el.width() / 2;
+        cy = this.el.height() / 2;
         w = (Math.min(cx, cy) - 10) / 3;
 
         total = 0;
         this.values.forEach((value) => total += value);
 
         min = 5 / (2 * w);
-        C = 1.9999 * Math.PI - min * this.options.data.length;
+        C = 1.9999 * Math.PI - min * this.data.length;
 
         last = 0;
         idx = 0;
-        let segments:any = [];
+        this.segments = [];
         _ref = this.values;
         for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
             value = _ref[i];
             next = last + min + C * (value / total);
-            seg = new DonutSegment(cx, cy, w * 2, w, last, next, this.options.data[i].color || this.options.colors[idx % this.options.colors.length], this.options.backgroundColor, idx, this.raphael);
+            seg = new Morris.DonutSegment(cx, cy, w * 2, w, last, next, this.data[i].color || this.options.colors[idx % this.options.colors.length], this.options.backgroundColor, idx, this.raphael);
             seg.render();
-            segments.push(seg);
+            this.segments.push(seg);
             seg.on("hover", this.select);
             seg.on("click", this.click);
             last = next;
@@ -43,7 +89,7 @@ export class Donut extends EventEmitter {
         }
 
         this.text1 = this.drawEmptyDonutLabel(cx, cy - 10, this.options.labelColor, 15, 800);
-        this.text2 = this.drawEmptyDonutLabel(cx, cy + 10, this.options.labelColor, 14, 400);
+        this.text2 = this.drawEmptyDonutLabel(cx, cy + 10, this.options.labelColor, 14);
 
         max_value = Math.max.apply(Math, this.values);
         idx = 0;
@@ -61,15 +107,15 @@ export class Donut extends EventEmitter {
     }
 
     public setData(data) {
-        this.options.data = data;
-        this.values = this.options.data.map((row) => parseFloat(row.value));
+        this.data = data;
+        this.values = this.data.map((row) => parseFloat(row.value));
         return this.redraw();
     }
 
     // @private
 
     public click = (idx) => {
-        return this.fire("click", idx, this.options.data[idx]);
+        return this.fire("click", idx, this.data[idx]);
     }
 
     // Select the segment at the given index.
@@ -79,7 +125,7 @@ export class Donut extends EventEmitter {
         this.segments.forEach((s) => s.deselect());
         segment = this.segments[idx];
         segment.select();
-        row = this.options.data[idx];
+        row = this.data[idx];
         return this.setLabels(row.label, this.options.formatter(row.value, row));
     }
 
@@ -87,23 +133,28 @@ export class Donut extends EventEmitter {
 
     public setLabels(label1, label2) {
         var inner, maxHeightBottom, maxHeightTop, maxWidth, text1bbox, text1scale, text2bbox, text2scale;
-        inner = (Math.min(this.options.element.offsetWidth / 2, this.options.element.offsetHeight / 2) - 10) * 2 / 3;
+        inner = (Math.min(this.el.width() / 2, this.el.height() / 2) - 10) * 2 / 3;
         maxWidth = 1.8 * inner;
         maxHeightTop = inner / 2;
         maxHeightBottom = inner / 3;
-        this.text1.setAttribute("text", label1);
-        this.text1.setAttribute("transform", "");
+        this.text1.attr({
+            text: label1,
+            transform: ""
+        });
         text1bbox = this.text1.getBBox();
         text1scale = Math.min(maxWidth / text1bbox.width, maxHeightTop / text1bbox.height);
         this.text1.attr({
             transform: "S" + text1scale + "," + text1scale + "," + (text1bbox.x + text1bbox.width / 2) + "," + (text1bbox.y + text1bbox.height)
         });
-        this.text1.setAttribute("text", label2);
-        this.text1.setAttribute("transform", "");
+        this.text2.attr({
+            text: label2,
+            transform: ""
+        });
         text2bbox = this.text2.getBBox();
         text2scale = Math.min(maxWidth / text2bbox.width, maxHeightBottom / text2bbox.height);
-        let text2transform =  "S" + text2scale + "," + text2scale + "," + (text2bbox.x + text2bbox.width / 2) + "," + text2bbox.y;
-        this.text2.setAttribute("transform", text2transform);
+        return this.text2.attr({
+            transform: "S" + text2scale + "," + text2scale + "," + (text2bbox.x + text2bbox.width / 2) + "," + text2bbox.y
+        });
     }
 
     public drawEmptyDonutLabel(xPos, yPos, color, fontSize, fontWeight) {
@@ -120,66 +171,18 @@ export class Donut extends EventEmitter {
         this.raphael.setSize(this.el.width(), this.el.height());
         return this.redraw();
     }
-
-    private resizeHandler() {
-    this.timeoutId = null;
-        (<RaphaelPaper>this.raphael).setSize(this.options.element.offsetWidth, this.options.element.offsetHeight);
-    this.redraw();
-    }
-
-    private ResizeRaphael(evt:UIEvent):any {
-        if (this.timeoutId != undefined) {
-            window.clearTimeout(this.timeoutId);
-        }
-        this.timeoutId = window.setTimeout();
-    }
-
-    constructor(options:DonutParams) {
-        this.options = options;
-
-        if (this.options.element == undefined) {
-            this.options.element = document.getElementById(this.options.elementId);
-        }
-
-        if (this.options.element == undefined) {
-            throw new Error("Element could not be found");
-        }
-
-        if (this.options.data == undefined || this.options.data.length == 0) {
-            return;
-        }
-
-        this.raphael = new Raphael(this.options.element);
-
-        if (this.options.resize) {
-            window.onresize =
-        }
-    }
 }
 
-
-
-class DonutSegment extends EventEmitter {
-
-    private sin_p0:number;
-    private cos_p0:number;
-    private sin_p1:number;
-    private cos_p1:number;
-    private is_long:boolean;
-    private path:string;
-    private selectedPath:string;
-    private hilight:any;
-
-    private arc:any;
-    private seg:any;private
-    private selected:any;
-
+// A segment within a donut chart.
+//
+// @private
+class DonutSegment extends Morris.EventEmitter {
     constructor(public cx, public cy, public inner, public outer, p0, p1, public color, public backgroundColor, public index, public raphael) {
         this.sin_p0 = Math.sin(p0);
         this.cos_p0 = Math.cos(p0);
         this.sin_p1 = Math.sin(p1);
         this.cos_p1 = Math.cos(p1);
-        this.is_long = (p1 - p0) > Math.PI;
+        this.is_long = (p1 - p0) > Math.PI ? 1 : 0;
         this.path = this.calcSegment(this.inner + 3, this.inner + this.outer - 5);
         this.selectedPath = this.calcSegment(this.inner + 3, this.inner + this.outer);
         this.hilight = this.calcArc(this.inner);
@@ -246,34 +249,4 @@ class DonutSegment extends EventEmitter {
             return this.selected = false;
         }
     }
-}
-
-class DonutParams {
-    colors:string[] = [
-        '#0B62A4',
-        '#3980B5',
-        '#679DC6',
-        '#95BBD7',
-        '#B0CCE1',
-        '#095791',
-        '#095085',
-        '#083E67',
-        '#052C48',
-        '#042135'
-    ];
-    backgroundColor:string = '#FFFFFF';
-    labelColor:string = '#000000';
-    formatter:(num?:number) => string = Formatters.Commas;
-    resize:boolean = false;
-
-    data:DataAttribute[];
-    elementId:string;
-    element:HTMLElement;
-}
-
-class DataAttribute {
-    value:number;
-    label:string;
-    formatted:string;
-    color:string;
 }
