@@ -9,6 +9,7 @@ export class Donut extends EventEmitter {
     private values: number[];
     private text1:HTMLElement;
     private text2:HTMLElement;
+    private segments:any = [];
 
     private redraw() : void {
         var C, cx, cy, i, idx, last, max_value, min, next, seg, total, value, w, _i, _j, _len, _len1, _ref, _ref1, _results;
@@ -62,14 +63,14 @@ export class Donut extends EventEmitter {
 
     public setData(data) {
         this.options.data = data;
-        this.values = this.options.data.map((row) => parseFloat(row.value));
+        this.values = this.options.data.map((row) => row.value);
         return this.redraw();
     }
 
     // @private
 
     public click = (idx) => {
-        return this.fire("click", idx, this.options.data[idx]);
+        return this.emit("click", idx, this.options.data[idx]);
     }
 
     // Select the segment at the given index.
@@ -80,7 +81,7 @@ export class Donut extends EventEmitter {
         segment = this.segments[idx];
         segment.select();
         row = this.options.data[idx];
-        return this.setLabels(row.label, this.options.formatter(row.value, row));
+        return this.setLabels(row.label, this.options.formatter((row.value, row)));
     }
 
     // @private
@@ -93,14 +94,12 @@ export class Donut extends EventEmitter {
         maxHeightBottom = inner / 3;
         this.text1.setAttribute("text", label1);
         this.text1.setAttribute("transform", "");
-        text1bbox = this.text1.getBBox();
+        text1bbox = (<RaphaelSet>this.text1).getBBox();
         text1scale = Math.min(maxWidth / text1bbox.width, maxHeightTop / text1bbox.height);
-        this.text1.attr({
-            transform: "S" + text1scale + "," + text1scale + "," + (text1bbox.x + text1bbox.width / 2) + "," + (text1bbox.y + text1bbox.height)
-        });
+        this.text1.setAttribute("transform", "S" + text1scale + "," + text1scale + "," + (text1bbox.x + text1bbox.width / 2) + "," + (text1bbox.y + text1bbox.height));
         this.text1.setAttribute("text", label2);
         this.text1.setAttribute("transform", "");
-        text2bbox = this.text2.getBBox();
+        text2bbox = (<RaphaelSet>this.text2).getBBox();
         text2scale = Math.min(maxWidth / text2bbox.width, maxHeightBottom / text2bbox.height);
         let text2transform =  "S" + text2scale + "," + text2scale + "," + (text2bbox.x + text2bbox.width / 2) + "," + text2bbox.y;
         this.text2.setAttribute("transform", text2transform);
@@ -108,7 +107,7 @@ export class Donut extends EventEmitter {
 
     public drawEmptyDonutLabel(xPos, yPos, color, fontSize, fontWeight) {
         var text;
-        text = this.raphael.text(xPos, yPos, "").attr("font-size", fontSize).attr("fill", color);
+        text = (<RaphaelPaper>this.raphael).text(xPos, yPos, "").attr("font-size", fontSize).attr("fill", color);
         if (fontWeight != null) {
             text.attr("font-weight", fontWeight);
         }
@@ -117,7 +116,7 @@ export class Donut extends EventEmitter {
 
     public resizeHandler = () => {
         this.timeoutId = null;
-        this.raphael.setSize(this.el.width(), this.el.height());
+        (<RaphaelPaper>this.raphael).setSize(this.options.element.offsetWidth, this.options.element.offsetHeight);
         return this.redraw();
     }
 
@@ -131,7 +130,16 @@ export class Donut extends EventEmitter {
         if (this.timeoutId != undefined) {
             window.clearTimeout(this.timeoutId);
         }
-        this.timeoutId = window.setTimeout();
+        this.timeoutId = window.setTimeout(100);
+    }
+
+    public ResizeEvt(event: Event) {
+        if (this.timeoutId != null) {
+            window.clearTimeout(this.timeoutId);
+        }
+        this.timeoutId = window.setTimeout(this.resizeHandler, 100);
+        let x:UIEvent;
+        return x;
     }
 
     constructor(options:DonutParams) {
@@ -152,8 +160,10 @@ export class Donut extends EventEmitter {
         this.raphael = new Raphael(this.options.element);
 
         if (this.options.resize) {
-            window.onresize =
+            window.onresize = this.ResizeEvt;
         }
+
+        this.setData(options.data);
     }
 }
 
@@ -171,7 +181,7 @@ class DonutSegment extends EventEmitter {
     private hilight:any;
 
     private arc:any;
-    private seg:any;private
+    private seg:any;
     private selected:any;
 
     constructor(public cx, public cy, public inner, public outer, p0, p1, public color, public backgroundColor, public index, public raphael) {
@@ -204,7 +214,7 @@ class DonutSegment extends EventEmitter {
 
     public render() {
         this.arc = this.drawDonutArc(this.hilight, this.color);
-        return this.seg = this.drawDonutSegment(this.path, this.color, this.backgroundColor, () => this.fire("hover", this.index), () => this.fire("click", this.index));
+        return this.seg = this.drawDonutSegment(this.path, this.color, this.backgroundColor, () => this.emit("hover", this.index), () => this.emit("click", this.index));
     }
 
     public drawDonutArc(path, color) {
