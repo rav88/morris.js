@@ -4,3 +4,5 @@ spec/viz/output/
 spec/viz/diff/
 bower_components
 .idea
+lib/
+typings/

@@ -1,8 +1,11 @@
 {
   "name": "morris.js",
-  "dependencies": {},
+  "dependencies": {
+    "requirejs": "registry:npm/requirejs#2.2.0+20160319062357"
+  },
   "globalDependencies": {
     "node": "registry:dt/node#6.0.0+20160709114037",
-    "raphael": "registry:dt/raphael#2.1.0+20160626232910"
+    "raphael": "registry:dt/raphael#2.1.0+20160626232910",
+    "wolfy87-eventemitter": "registry:dt/wolfy87-eventemitter#4.2.9+20160524142429"
   }
 }

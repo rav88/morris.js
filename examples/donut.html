@@ -1,19 +1,29 @@
 <!doctype html>
 <head>
   <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>-->
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js"></script>
-  <script src="../lib/morris.js"></script>
+  <!--<script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js"></script>-->
   <script src="http://cdnjs.cloudflare.com/ajax/libs/prettify/r224/prettify.min.js"></script>
-  <script src="lib/example.js"></script>
   <link rel="stylesheet" href="lib/example.css">
   <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/prettify/r224/prettify.min.css">
   <link rel="stylesheet" href="../morris.css">
+  <!--script src="../node_modules/raphael/raphael.js"></script-->
+  <script>
+    window['require']= {
+      paths: {
+        "wolfy87-eventemitter": "../node_modules/wolfy-eventemitter/src/EventEmitter",
+        "raphael": "../node_modules/raphael/raphael"
+      }
+    };
+  </script>
+  <script src="../node_modules/requirejs/require.js" data-main="../lib/config"></script>
+
+
 </head>
 <body>
 <h1>Donut Chart</h1>
 <div id="graph"></div>
 <pre id="code" class="prettyprint linenums">
-Morris.Donut({
+Donut({
   element: 'graph',
   data: [
     {value: 70, label: 'foo'},
