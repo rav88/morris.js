@@ -22,6 +22,10 @@ export class Test {
         dataArr.push(data2);
 
         argumentsFordonut.data = dataArr;
+
+        argumentsFordonut.formatter = (num?:number) : string => {
+            return num.toString() + " %";
+        };
         var d = new Donut(argumentsFordonut);
     }
 }

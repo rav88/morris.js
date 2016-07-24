@@ -200,7 +200,7 @@ export module Graph {
         private cos_p0:number;
         private sin_p1:number;
         private cos_p1:number;
-        private is_long:boolean;
+        private is_long:number;
         private path:string;
         private selectedPath:string;
         private hilight:any;
@@ -215,7 +215,7 @@ export module Graph {
             this.cos_p0 = Math.cos(p0);
             this.sin_p1 = Math.sin(p1);
             this.cos_p1 = Math.cos(p1);
-            this.is_long = (p1 - p0) > Math.PI;
+            this.is_long = (p1 - p0) > Math.PI ? 1 : 0;
             this.path = this.calcSegment(this.inner + 3, this.inner + this.outer - 5);
             this.selectedPath = this.calcSegment(this.inner + 3, this.inner + this.outer);
             this.hilight = this.calcArc(this.inner);
@@ -225,7 +225,7 @@ export module Graph {
             return [this.cx + r * this.sin_p0, this.cy + r * this.cos_p0, this.cx + r * this.sin_p1, this.cy + r * this.cos_p1];
         }
 
-        public calcSegment(r1:number, r2:number):any {
+        public calcSegment(r1:number, r2:number):string {
             let ix0:number;
             let iy0:number;
             let ix1:number;
